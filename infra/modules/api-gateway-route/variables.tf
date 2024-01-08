@@ -9,9 +9,8 @@ variable "route_key" {
 variable "authorizer_id" {
   description = "The identifier of the Authorizer to use on this route."
   type        = string
-  default     = null
 }
-variable "integration_uri" {
+variable "lambda_invocation_arn" {
   description = "The Invocation ARN of the Lambda function."
   type        = string
 }

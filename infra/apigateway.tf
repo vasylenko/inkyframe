@@ -49,17 +49,15 @@ resource "aws_lambda_permission" "allow_api_gw_invoke_authorizer" {
   source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/authorizers/${aws_apigatewayv2_authorizer.header_based_authorizer.id}"
 }
 
-
-module "route_calendars" {
-  source               = "./modules/api-gateway-route"
-  api_id               = aws_apigatewayv2_api.this.id
-  route_key            = "GET /calendars/{calendar-name}"
-  api_gw_execution_arn = aws_apigatewayv2_api.this.execution_arn
-  integration_uri      = module.lambda_calendar_backend.lambda.invoke_arn
-  lambda_function_name = module.lambda_calendar_backend.lambda.function_name
-  authorizer_id        = aws_apigatewayv2_authorizer.header_based_authorizer.id
+module "lambda_api_gw_authorizer" {
+  source          = "./modules/lambda"
+  deployment_file = "../backend-lambda-functions/apigateway-authorizer/deployment.zip"
+  function_name   = "api-gateway-authorizer"
+  project_name    = local.project_name
+  function_ssm_parameters = [
+    "authorization-token"
+  ]
 }
-
 
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.this.id

@@ -26,13 +26,13 @@ variable "function_runtime" {
 }
 variable "function_timeout" {
   description = "The timeout of the Lambda function execution in seconds"
-  type = number
-  default = 3
+  type        = number
+  default     = 3
 }
 variable "function_ssm_parameters" {
   description = "A set of SSM parameter names to be precreated for the function (env variables will be precreated as well)"
-  type = set(string)
-  default = []
+  type        = set(string)
+  default     = []
 }
 variable "function_handler" {
   description = "The function handler (entrypoint)"

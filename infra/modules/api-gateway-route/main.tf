@@ -10,7 +10,7 @@ resource "aws_apigatewayv2_integration" "this" {
   api_id                 = var.api_id
   integration_type       = "AWS_PROXY"
   connection_type        = "INTERNET"
-  integration_uri        = var.integration_uri
+  integration_uri        = var.lambda_invocation_arn
   payload_format_version = "2.0"
 }
 
