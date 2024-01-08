@@ -1,3 +1,7 @@
+resource "aws_api_gateway_account" "this" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_logs.arn
+}
+
 resource "aws_iam_role" "api_gateway_cloudwatch_logs" {
   name = "api-gateway-cloudwatch-logs"
   assume_role_policy = jsonencode({
@@ -15,8 +19,10 @@ resource "aws_iam_role" "api_gateway_cloudwatch_logs" {
   managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"]
 }
 
-resource "aws_api_gateway_account" "this" {
-  cloudwatch_role_arn = aws_iam_role.api_gateway_cloudwatch_logs.arn
+resource "aws_cloudwatch_log_group" "api_gateway_logs_inkyframe" {
+  name              = "/aws/apigateway/inkyframe"
+  log_group_class   = "STANDARD"
+  retention_in_days = 7
 }
 
 resource "aws_apigatewayv2_api" "this" {
@@ -43,37 +49,17 @@ resource "aws_lambda_permission" "allow_api_gw_invoke_authorizer" {
   source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/authorizers/${aws_apigatewayv2_authorizer.header_based_authorizer.id}"
 }
 
-resource "aws_apigatewayv2_route" "calendar_backend" {
-  api_id             = aws_apigatewayv2_api.this.id
-  route_key          = "GET /calendars/{calendar-name}"
-  authorization_type = "CUSTOM"
-  authorizer_id      = aws_apigatewayv2_authorizer.header_based_authorizer.id
-  target             = "integrations/${aws_apigatewayv2_integration.calendar_backend.id}"
+
+module "route_calendars" {
+  source               = "./modules/api-gateway-route"
+  api_id               = aws_apigatewayv2_api.this.id
+  route_key            = "GET /calendars/{calendar-name}"
+  api_gw_execution_arn = aws_apigatewayv2_api.this.execution_arn
+  integration_uri      = module.lambda_calendar_backend.lambda.invoke_arn
+  lambda_function_name = module.lambda_calendar_backend.lambda.function_name
+  authorizer_id        = aws_apigatewayv2_authorizer.header_based_authorizer.id
 }
 
-resource "aws_apigatewayv2_integration" "calendar_backend" {
-  api_id                 = aws_apigatewayv2_api.this.id
-  integration_type       = "AWS_PROXY"
-  connection_type        = "INTERNET"
-  integration_method     = "POST"
-  integration_uri        = module.lambda_calendar_backend.lambda.invoke_arn
-  payload_format_version = "2.0"
-}
-
-
-resource "aws_lambda_permission" "api_gw_invoke_calendar_backend" {
-  statement_id  = "allowInvokeFromAPIGatewayRoute"
-  action        = "lambda:InvokeFunction"
-  function_name = module.lambda_calendar_backend.lambda.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*/${split("/", aws_apigatewayv2_route.calendar_backend.route_key)[1]}/*"
-}
-
-resource "aws_cloudwatch_log_group" "api_gateway_logs_inkyframe" {
-  name              = "/aws/apigateway/inkyframe"
-  log_group_class   = "STANDARD"
-  retention_in_days = 7
-}
 
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.this.id
@@ -106,11 +92,4 @@ resource "aws_apigatewayv2_stage" "default" {
     })
     #   see for details https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-logging-variables.html
   }
-}
-
-resource "aws_apigatewayv2_deployment" "this" {
-  api_id = aws_apigatewayv2_api.this.id
-  depends_on = [
-    aws_apigatewayv2_route.calendar_backend
-  ]
 }
