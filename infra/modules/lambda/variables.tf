@@ -14,28 +14,13 @@ variable "function_name" {
   description = "Name of the Lambda function"
   type        = string
 }
-variable "function_architecture" {
-  description = "The architecture of the Lambda function"
-  type        = string
-  default     = "arm64"
-}
-variable "function_runtime" {
-  description = "The runtime of the Lambda function"
-  type        = string
-  default     = "provided.al2023"
-}
 variable "function_timeout" {
   description = "The timeout of the Lambda function execution in seconds"
   type        = number
   default     = 3
 }
-variable "function_ssm_parameters" {
+variable "function_ssm_parameter_names" {
   description = "A set of SSM parameter names to be precreated for the function (env variables will be precreated as well)"
   type        = set(string)
   default     = []
-}
-variable "function_handler" {
-  description = "The function handler (entrypoint)"
-  type        = string
-  default     = "bootstrap.handler"
 }

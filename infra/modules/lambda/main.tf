@@ -4,19 +4,19 @@ locals {
 resource "aws_lambda_function" "this" {
   function_name = local.full_function_name
   role          = aws_iam_role.this.arn
-  architectures = [var.function_architecture]
+  architectures = ["arm64"]
   filename      = var.deployment_file
   package_type  = "Zip"
   runtime       = "provided.al2023"
   handler       = "bootstrap.handler"
   timeout       = var.function_timeout
   environment {
-    variables = { for item in var.function_ssm_parameters : upper(replace(item, "-", "_")) => aws_ssm_parameter.function_ssm_parameters[item].name }
+    variables = { for item in var.function_ssm_parameter_names : upper(replace(item, "-", "_")) => aws_ssm_parameter.function_ssm_parameters[item].name }
   }
 }
 
 resource "aws_ssm_parameter" "function_ssm_parameters" {
-  for_each = var.function_ssm_parameters
+  for_each = var.function_ssm_parameter_names
   name     = "/projects/${var.project_name}/lambda/${var.function_name}/${each.value}"
   type     = "SecureString"
   key_id   = data.aws_kms_alias.ssm.arn

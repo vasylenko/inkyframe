@@ -3,7 +3,7 @@ module "lambda_calendar_backend" {
   deployment_file = "../backend-lambda-functions/calendar-backend/deployment.zip"
   function_name   = "calendar-backend"
   project_name    = local.project_name
-  function_ssm_parameters = [
+  function_ssm_parameter_names = [
     "google-api-oauth-token",
     "google-api-credentials"
   ]
@@ -21,7 +21,7 @@ module "route_calendars" {
 
 #module "lambda_this_day_in_history_backend" {
 #  source          = "./modules/lambda"
-#  deployment_file = "../backend-lambda-functions/this-day-in-history/deployment.zip"
+#  deployment_file = "../backend-lambda-functions/calendar-backend/deployment.zip"
 #  function_name   = "this-day-in-history-backend"
 #  project_name    = local.project_name
 #}

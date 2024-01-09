@@ -54,7 +54,7 @@ module "lambda_api_gw_authorizer" {
   deployment_file = "../backend-lambda-functions/apigateway-authorizer/deployment.zip"
   function_name   = "api-gateway-authorizer"
   project_name    = local.project_name
-  function_ssm_parameters = [
+  function_ssm_parameter_names = [
     "authorization-token"
   ]
 }
@@ -71,22 +71,18 @@ resource "aws_apigatewayv2_stage" "default" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs_inkyframe.arn
     format = jsonencode({
-      requestId                 = "$context.requestId",
       authorizerError           = "$context.authorizer.error",
-      authorizerPrincipalId     = "$context.authorizer.principalId",
-      requestErrorMessage       = "$context.error.message",
-      requestErrorMessageString = "$context.error.messageString",
-      identityAccountId         = "$context.identity.accountId",
-      identityCaller            = "$context.identity.caller",
       identitySourceIP          = "$context.identity.sourceIp",
-      identityUser              = "$context.identity.user",
-      identityUserArn           = "$context.identity.userArn",
       integrationError          = "$context.integration.error",
+      integrationErrorMessage   = "$context.integration.errorMessage"
+      integrationLatency        = "$context.integration.latency",
+      integrationRequestId      = "$context.integration.requestId",
       integrationStatus         = "$context.integration.integrationStatus",
       integrationStatusCode     = "$context.integration.status",
-      integrationRequestId      = "$context.integration.requestId",
-      integrationLatency        = "$context.integration.latency",
-      integrationErrorMessage   = "$context.integration.errorMessage"
+      requestErrorMessage       = "$context.error.message",
+      requestErrorMessageString = "$context.error.messageString",
+      requestId                 = "$context.requestId",
+      routeKey                  = "$context.routeKey",
     })
     #   see for details https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-logging-variables.html
   }
