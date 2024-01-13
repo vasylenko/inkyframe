@@ -7,7 +7,7 @@ from picographics import PicoGraphics, DISPLAY_INKY_FRAME_7 as DISPLAY  # 7.3"
 API_AUTH_HEADER = None
 API_AUTH_KEY = None
 API_URL = None
-UPDATE_INTERVAL = 7200 # in minutes, e.g., update every 12 hours
+UPDATE_INTERVAL = 300 # in minutes
 CALENDAR_API_PATH = "/calendars"
 CALENDAR_NAME = "Personal"
 NUM_CAL_EVENTS = 5
