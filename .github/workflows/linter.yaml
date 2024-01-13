@@ -1,0 +1,41 @@
+name: Run Linters
+on:
+  pull_request:
+
+env:
+  FOO: "BAR"
+
+jobs:
+  tfsyntax:
+    name: Validate and Format
+    runs-on: ubuntu-latest
+    container: hashicorp/terraform:1.6
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run terraform validate
+        run: |
+          terraform init -backend=false
+          terraform validate -no-color
+
+      - name: Run terraform fmt
+        run: |
+          terraform fmt -check -diff -recursive -no-color  
+
+  tflint:
+    name: TFlint
+    runs-on: ubuntu-latest
+    container: ghcr.io/terraform-linters/tflint:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Cleanup tflint plugins with different architecture
+        run: rm -rf infra/.tflint.d
+
+      - name: Init linter
+        run: tflint --init --chdir=infra
+
+      - name: Run linter
+        run: tflint --chdir=infra
