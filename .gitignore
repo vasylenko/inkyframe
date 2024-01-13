@@ -1,0 +1,10 @@
+.DS_Store
+.vscode
+.idea
+.terraform/
+*.tfstate
+backend.tf
+provider.tf
+*.tfvars
+state.json
+/backend-lambda-functions/google-oauthtoken-generator/

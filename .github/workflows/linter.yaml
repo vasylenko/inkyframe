@@ -1,0 +1,25 @@
+name: Run Linters
+on: push
+#  pull_request:
+
+env:
+  FOO: "BAR"
+
+jobs:
+  tflint:
+    name: Run TFlint
+    runs-on: ubuntu-latest
+    container: ghcr.io/terraform-linters/tflint:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Init linter
+        run: tflint --init --chdir=infra
+        with:
+          entrypoint: ""
+
+      - name: Run linter
+        run: tflint --chdir=infra
+        with:
+          entrypoint: ""
