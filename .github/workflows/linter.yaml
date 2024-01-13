@@ -6,6 +6,23 @@ env:
   FOO: "BAR"
 
 jobs:
+  tfsyntax:
+    name: Run Terraform Validate and Format
+    runs-on: ubuntu-latest
+    container: hashicorp/terraform:1.6
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run terraform validate
+        run: |
+          terraform init -backend=false
+          terraform validate -no-color
+
+      - name: Run terraform fmt
+        run: |
+          terraform fmt -check -diff -recursive -no-color  
+
   tflint:
     name: Run TFlint
     runs-on: ubuntu-latest
@@ -22,4 +39,3 @@ jobs:
 
       - name: Run linter
         run: tflint --chdir=infra
-
