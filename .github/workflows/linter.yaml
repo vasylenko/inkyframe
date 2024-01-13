@@ -16,10 +16,7 @@ jobs:
 
       - name: Init linter
         run: tflint --init --chdir=infra
-        with:
-          entrypoint: ""
 
       - name: Run linter
         run: tflint --chdir=infra
-        with:
-          entrypoint: ""
+
