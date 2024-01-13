@@ -14,6 +14,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Cleanup tflint plugins with different architecture
+        run: rm -rf infra/.tflint.d
+
       - name: Init linter
         run: tflint --init --chdir=infra
 
