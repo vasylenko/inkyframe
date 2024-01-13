@@ -7,7 +7,7 @@ env:
 
 jobs:
   tfsyntax:
-    name: Run Terraform Validate and Format
+    name: Validate and Format
     runs-on: ubuntu-latest
     container: hashicorp/terraform:1.6
     steps:
@@ -24,7 +24,7 @@ jobs:
           terraform fmt -check -diff -recursive -no-color  
 
   tflint:
-    name: Run TFlint
+    name: TFlint
     runs-on: ubuntu-latest
     container: ghcr.io/terraform-linters/tflint:latest
     steps:
