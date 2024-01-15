@@ -1,7 +1,7 @@
 import utime
 import requests
 
-class CalendarUpdateError(Exception):
+class AppUpdateError(Exception):
     """Exception raised when there is an error updating the calendar."""
     pass
 
@@ -17,7 +17,7 @@ class DrawingSettings:
     TITLE_DATE_BACKGROUND_COLOR = 4
     TITLE_DATE_BACKGROUND_WIDTH = 25/10 * TITLE_RECTANGLE_HEIGHT
 
-    DATE_BACKGROUND_COLOR = 5
+    DATE_BACKGROUND_COLOR = 4
     DATE_BACKGROUND_WIDTH = 2.5 * TITLE_RECTANGLE_HEIGHT
 
     EVENTS_FONT_SCALE = 12/10
@@ -27,12 +27,11 @@ class DrawingSettings:
     EVENTS_FONT_THICKNESS = 3
 
     EVENT_HIGHLIGHT_COLOR_TODAY = 4
-    EVENT_HIGHLIGHT_COLOR_TOMORROW = 5
     EVENT_FONT_COLOR_DEFAULT = 0
     EVENT_FONT_COLOR_TODAY = 1
     
 
-class DisplayCalendar:
+class InkyApp:
     def __init__(self):
         self.api_auth_header = ""
         self.api_auth_key = ""
@@ -45,12 +44,13 @@ class DisplayCalendar:
         self.last_update = 0
 
     def set_api_info(self, api_auth_header, api_auth_key, api_url):
+        print("Setting API info...")
         self.api_auth_header = api_auth_header
         self.api_auth_key = api_auth_key
         self.api_url = api_url
 
-    def update(self, logfile=None):
-        print("Updating calendar...", file=logfile)
+    def update(self):
+        print("Updating calendar...")
         request_address = None
 
         request_address = self.api_url + self.calendar_api_path + "/" + self.calendar_name + "?num-events=" + str(self.num_cal_events)
@@ -59,17 +59,20 @@ class DisplayCalendar:
         response = None
         response = requests.get(request_address, headers=headers)
         if response.status_code != 200:
-            print("Failed to update calendar", response.status_code, file=logfile)
+            print("Failed to update calendar", response.status_code)
             response.raise_for_status()
         try:
             self.calendar_events = response.json()
         except IOError as e:
-            raise CalendarUpdateError("Failed to update calendar", e)
+            raise AppUpdateError("Failed to update calendar", e)
         finally:
             response.close() 
 
-    def draw(self, display, logfile=None):
-        print("Drawing calendar...", file=logfile)
+    def draw(self, display):
+        print("Drawing calendar...")
+        # check if self.calendar_events is not empty; otherwise raise exception
+        if not self.calendar_events:
+            raise AppUpdateError("Calendar events list is empty")
         display.set_pen(1)
         display.clear()
         display.set_font("sans")
