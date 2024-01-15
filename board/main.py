@@ -1,9 +1,7 @@
 import gc
 import time
-from machine import reset, Pin, SPI
+from machine import reset
 import inky_helper as ih
-import os
-import sdcard 
 import sys
 from picographics import PicoGraphics, DISPLAY_INKY_FRAME_7 as DISPLAY  # 7.3"
 
@@ -16,9 +14,12 @@ display = PicoGraphics(DISPLAY)
 WIDTH, HEIGHT = display.get_bounds()
 display.set_font("bitmap8")
 
+running_app = None
+
 # Setup for SD card
-sdcard_mount_point = "/sdcard"
-sd_spi, sd = None, None
+sd_card = None
+sd_card_mount_point = "/sdcard"
+logfile = "/sdcard/execution-log.log"
 
 def show_error(text):
     print(text)
@@ -31,6 +32,8 @@ def show_error(text):
 
 
 def launcher():
+    ih.led_busy.on()
+
     y_offset = 35
 
     # Draws the menu
@@ -76,20 +79,14 @@ def launcher():
     note_len = display.measure_text(note, 2) // 2
     display.text(note, (WIDTH // 2 - note_len), HEIGHT - 30, 600, 2)
 
-    ih.led_busy.on()
     display.update()
+
     ih.led_busy.off()
-
-    # Now we've drawn the menu to the screen, we wait here for the user to select an app.
-    # Then once an app is selected, we set that as the current app and reset the device and load into it.
-
-    # You can replace any of the included examples with one of your own,
-    # just replace the name of the app in the line "ih.update_last_app("nasa_apod")"
 
     while True:
         if ih.inky_frame.button_a.read():
             ih.inky_frame.button_a.led_on()
-            ih.update_state("calendar")
+            ih.update_state("calendar_usb_power")
             time.sleep(0.5)
             reset()
         # if ih.inky_frame.button_b.read():
@@ -104,91 +101,116 @@ ih.clear_button_leds()
 ih.led_busy.off()
 ih.led_wifi.off()
 
-if ih.inky_frame.button_a.read() and ih.inky_frame.button_e.read():
+if ih.button_a.read() and ih.button_e.read():
     launcher()
 
 if ih.file_exists("state.json"):
     # Loads the JSON config and prepares the device for the last app that was running.
     print("Loading state.json")
     ih.load_state()
-    ih.launch_app(ih.state['run'])
-
+    # ih.launch_app(ih.state['run'])
+    app = __import__(ih.state['run'])
+    running_app = getattr(app, 'InkyApp')() 
 else:
     print("No state.json file found, launching the launcher")
     launcher()
 
-ih.clear_button_leds() 
-ih.inky_frame.led_busy.off()
-ih.inky_frame.led_wifi.off()
-
 try:
     print("Initializing SD card")
-    sd_spi = SPI(0, sck=Pin(18, Pin.OUT), mosi=Pin(19, Pin.OUT), miso=Pin(16, Pin.OUT))
-    sd = sdcard.SDCard(sd_spi, Pin(22))
-    time.sleep(1)
-except:
-    show_error("Insert the SD card")
+    sd_card = ih.init_sd_card()
+except Exception as e:
+    show_error("Could not init the SD card: " + str(e)) 
     ih.stop_execution()
 
 try:
     print("Mounting SD card")
-    os.mount(sd, sdcard_mount_point, readonly=True)
-except:
-    print("Failed to mount SD card, perhaps it is already mounted?")
-    print("Unmounting SD card")
-    os.umount(sdcard_mount_point)
-    print("Mounting SD card")
-    os.mount(sd, sdcard_mount_point, readonly=True)
-    print("SD card mounted")
-else:
-    print("SD card mounted")
-    # time.sleep(0.5)
+    ih.mount_sd_card(sd_card, sd_card_mount_point)
+except Exception as e:
+    show_error("Could not mount the SD card: " + str(e))
+    ih.stop_execution()
 
-if not sdcard_mount_point in sys.path:
+if not sd_card_mount_point in sys.path:
     print("Adding SD card mount point to sys.path")
-    sys.path.append(sdcard_mount_point)
+    sys.path.append(sd_card_mount_point)
     print("SD card mount point added to sys.path, sys.path is now:", sys.path)
 
 # Sets secrets for the app
 try:
     print("Getting secrets for the app")
     from secrets import API_AUTH_HEADER, API_AUTH_KEY, API_URL
-    ih.app.API_AUTH_HEADER = API_AUTH_HEADER
-    ih.app.API_AUTH_KEY = API_AUTH_KEY
-    ih.app.API_URL = API_URL
-    # ih.app.SMTH_ELSE = SMTH_ELSE
+    running_app.set_api_info(API_AUTH_HEADER, API_AUTH_KEY, API_URL)
 except ImportError:
     show_error("Pleaese specify API_AUTH_HEADER, API_AUTH_KEY in secrets.py on the SD card")
     ih.stop_execution()
 
 
-while True:
-    # Enables wifi
-    try:
-        print("Getting WiFi credentials")
-        from secrets import WIFI_SSID, WIFI_PASSWORD
-    except ImportError:
-        show_error("Pleaese specify WIFI_SSID,WIFI_PASSWORD in secrets.py on the SD card")
-        ih.stop_execution()
-    if not ih.network_connect(WIFI_SSID, WIFI_PASSWORD):
-        show_error("No WiFi connection")
-        ih.stop_execution()
+gc.collect()
+ih.write_debug_msg(logfile, "Starting "+ih.state['run'])
+
+ih.write_debug_msg(logfile, "Reading WiFi credentials from SD card")
+try:
+    ih.progress_bar_fill("a")
+    print("Getting WiFi credentials")
+    from secrets import WIFI_SSID, WIFI_PASSWORD
+    print(WIFI_SSID)
+except ImportError:
+    ih.progress_bar_clear()
+    show_error("Pleaese specify WIFI_SSID,WIFI_PASSWORD in secrets.py on the SD card")
+    ih.stop_execution()
 
 
-    # Syncs the time
-    if not ih.sync_time():
-        show_error("Could not sync time")
-        ih.stop_execution()
-    gc.collect()
+ih.write_debug_msg(logfile, "Trying to coneect to WiFi")
+try: 
+    ih.progress_bar_fill("b")
+    ih.network_connect(WIFI_SSID, WIFI_PASSWORD)
+except Exception as e:
+    ih.progress_bar_clear()
+    show_error("No WiFi connection:" + str(e))
+    ih.stop_execution()
 
-    # Gets the data to draw on the screen
-    if not ih.app.update():
-        show_error("Exception in update")
-        ih.stop_execution()
-    gc.collect()
-    
-    # Draws the data on the screen
-    ih.app.draw()
+ih.write_debug_msg(logfile, "Connected to WiFi")
 
-    ih.usb_sleep(ih.app.UPDATE_INTERVAL) # for usb power
-    # ih.battery_sleep(ih.app.UPDATE_INTERVAL) # for battery power
+# Syncs the time
+try:
+    ih.progress_bar_fill("c")
+    ih.sync_time()
+except Exception as e:
+    ih.progress_bar_clear()
+    show_error("Could not sync time: " + str(e))
+    ih.stop_execution()
+gc.collect()
+
+ih.write_debug_msg(logfile, "Synced the time")
+
+# Gets the data to draw on the screen
+try:
+    ih.progress_bar_fill("d")
+    running_app.update()
+except Exception as e:
+    ih.progress_bar_clear()
+    show_error("Exception in update: " + str(e))
+    ih.stop_execution()
+gc.collect()
+
+ih.write_debug_msg(logfile, "Updated the app data")
+
+# Draws the data on the screen
+try:
+    ih.progress_bar_fill("e")
+    running_app.draw(display)
+except Exception as e:
+    ih.progress_bar_clear
+    show_error("Exception in draw: " + str(e))
+    ih.stop_execution()
+
+ih.write_debug_msg(logfile, "Updated the display")
+
+gc.collect()
+ih.clear_all_leds()
+time.sleep(1)    
+ih.write_debug_msg(logfile, "Going to sleep")
+ih.inky_frame.sleep_for(30)
+# ih.usb_sleep(1200000) # for usb power
+# ih.battery_sleep(ih.app.UPDATE_INTERVAL) # for battery power
+ih.write_debug_msg(logfile, "Waking up")
+reset()
