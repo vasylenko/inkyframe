@@ -39,8 +39,8 @@ jobs:
 
       - name: Init linter
         working-directory: ${{ env.TF_DIR }}
-        run: tflint --init --chdir=infra
+        run: tflint --init
 
       - name: Run linter
         working-directory: ${{ env.TF_DIR }}
-        run: tflint --chdir=infra
+        run: tflint --recursive --no-color
