@@ -3,7 +3,8 @@ on:
   pull_request:
 
 env:
-  FOO: "BAR"
+  TF_DIR: "infra"
+
 
 jobs:
   tfsyntax:
@@ -15,11 +16,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run terraform validate
+        working-directory: ${{ env.TF_DIR }}
         run: |
           terraform init -backend=false
           terraform validate -no-color
 
       - name: Run terraform fmt
+        working-directory: ${{ env.TF_DIR }}
         run: |
           terraform fmt -check -diff -recursive -no-color  
 
@@ -35,7 +38,9 @@ jobs:
         run: rm -rf infra/.tflint.d
 
       - name: Init linter
+        working-directory: ${{ env.TF_DIR }}
         run: tflint --init --chdir=infra
 
       - name: Run linter
+        working-directory: ${{ env.TF_DIR }}
         run: tflint --chdir=infra
