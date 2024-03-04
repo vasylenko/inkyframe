@@ -13,6 +13,16 @@ resource "aws_lambda_function" "this" {
   environment {
     variables = { for item in var.function_ssm_parameter_names : upper(replace(item, "-", "_")) => aws_ssm_parameter.function_ssm_parameters[item].name }
   }
+  logging_config {
+    application_log_level = "INFO"
+    log_format            = "JSON"
+    system_log_level      = "INFO"
+    log_group             = aws_cloudwatch_log_group.this.name
+  }
+  depends_on = [
+    aws_cloudwatch_log_group.this,
+    aws_iam_role.this,
+  ]
 }
 
 resource "aws_ssm_parameter" "function_ssm_parameters" {
