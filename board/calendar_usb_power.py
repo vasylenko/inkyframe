@@ -115,6 +115,13 @@ class InkyApp:
                 display.set_pen(DrawingSettings.EVENT_FONT_COLOR_DEFAULT)
                 display.text(i['dateTime']+" "+i['summary'], 0, int(DrawingSettings.EVENTS_BASE_SPACING * line_num + DrawingSettings.TITLE_RECTANGLE_HEIGHT), WIDTH, DrawingSettings.EVENTS_FONT_SCALE)
                 line_num += 1
+        
+        display.set_font("bitmap8")
+        display.set_pen(DrawingSettings.EVENT_FONT_COLOR_DEFAULT)
+        last_updated = "Last updated: "+"{:02d} {}, {:02d}:{:02d}".format(utime.localtime(current_time)[2], month_names[utime.localtime(current_time)[1]], utime.localtime(current_time)[3], utime.localtime(current_time)[4])
+        last_updated_len = display.measure_text(text=last_updated, scale=2)
+        display.text(last_updated, WIDTH-last_updated_len, HEIGHT - 16, scale=2)
+        
         display.update()
 
 

@@ -21,15 +21,6 @@ sd_card = None
 sd_card_mount_point = "/sdcard"
 logfile = "/sdcard/execution-log.log"
 
-def show_error(text):
-    print(text)
-    display.set_font("bitmap8")
-    display.set_pen(1)
-    display.clear()
-    display.set_pen(0)
-    display.text(text, 5, 16, WIDTH, 4)
-    display.update()
-
 
 def launcher():
     ih.led_busy.on()
@@ -95,7 +86,6 @@ def launcher():
         #     time.sleep(0.5)
         #     reset()
 
-
 # Turn any LEDs off that may still be on from last run.
 ih.clear_button_leds()
 ih.led_busy.off()
@@ -116,59 +106,43 @@ else:
     launcher()
 
 try:
-    print("Initializing SD card")
     sd_card = ih.init_sd_card()
-except Exception as e:
-    show_error("Could not init the SD card: " + str(e)) 
-    ih.stop_execution()
-
-try:
-    print("Mounting SD card")
     ih.mount_sd_card(sd_card, sd_card_mount_point)
 except Exception as e:
-    show_error("Could not mount the SD card: " + str(e))
-    ih.stop_execution()
+    ih.show_error(display,"Could not mount the SD card: " + str(e)) 
+    reset()
 
 if not sd_card_mount_point in sys.path:
     print("Adding SD card mount point to sys.path")
     sys.path.append(sd_card_mount_point)
     print("SD card mount point added to sys.path, sys.path is now:", sys.path)
 
-# Sets secrets for the app
 try:
     print("Getting secrets for the app")
     from secrets import API_AUTH_HEADER, API_AUTH_KEY, API_URL
     running_app.set_api_info(API_AUTH_HEADER, API_AUTH_KEY, API_URL)
-except ImportError:
-    show_error("Pleaese specify API_AUTH_HEADER, API_AUTH_KEY in secrets.py on the SD card")
-    ih.stop_execution()
-
-
-gc.collect()
-ih.write_debug_msg(logfile, "Starting "+ih.state['run'])
-
-ih.write_debug_msg(logfile, "Reading WiFi credentials from SD card")
+except ImportError as e:
+    ih.show_error(display,"Could not get api info from "+sd_card_mount_point+"/"+"secrets.py: "+str(e))
+    reset()
 try:
     ih.progress_bar_fill("a")
     print("Getting WiFi credentials")
     from secrets import WIFI_SSID, WIFI_PASSWORD
     print(WIFI_SSID)
-except ImportError:
+except ImportError as e:
     ih.progress_bar_clear()
-    show_error("Pleaese specify WIFI_SSID,WIFI_PASSWORD in secrets.py on the SD card")
-    ih.stop_execution()
+    ih.show_error(display,"Could not get wifi info from "+sd_card_mount_point+"/"+"secrets.py: "+str(e))
+    reset()
 
+gc.collect()
 
-ih.write_debug_msg(logfile, "Trying to coneect to WiFi")
 try: 
     ih.progress_bar_fill("b")
     ih.network_connect(WIFI_SSID, WIFI_PASSWORD)
 except Exception as e:
     ih.progress_bar_clear()
-    show_error("No WiFi connection:" + str(e))
-    ih.stop_execution()
+    reset()
 
-ih.write_debug_msg(logfile, "Connected to WiFi")
 
 # Syncs the time
 try:
@@ -176,11 +150,9 @@ try:
     ih.sync_time()
 except Exception as e:
     ih.progress_bar_clear()
-    show_error("Could not sync time: " + str(e))
-    ih.stop_execution()
+    reset()
 gc.collect()
 
-ih.write_debug_msg(logfile, "Synced the time")
 
 # Gets the data to draw on the screen
 try:
@@ -188,11 +160,9 @@ try:
     running_app.update()
 except Exception as e:
     ih.progress_bar_clear()
-    show_error("Exception in update: " + str(e))
-    ih.stop_execution()
+    reset()
 gc.collect()
 
-ih.write_debug_msg(logfile, "Updated the app data")
 
 # Draws the data on the screen
 try:
@@ -200,17 +170,13 @@ try:
     running_app.draw(display)
 except Exception as e:
     ih.progress_bar_clear
-    show_error("Exception in draw: " + str(e))
-    ih.stop_execution()
+    reset()
+else:
+    ih.illuminate_button_leds(10)
 
-ih.write_debug_msg(logfile, "Updated the display")
 
 gc.collect()
 ih.clear_all_leds()
 time.sleep(1)    
-ih.write_debug_msg(logfile, "Going to sleep")
 ih.inky_frame.sleep_for(30)
-# ih.usb_sleep(1200000) # for usb power
-# ih.battery_sleep(ih.app.UPDATE_INTERVAL) # for battery power
-ih.write_debug_msg(logfile, "Waking up")
 reset()

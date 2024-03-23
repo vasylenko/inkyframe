@@ -37,6 +37,7 @@ class InkyHelperError(Exception):
     """Exception raised when there is an error with an inkyhelper function."""
     pass
 
+### SD CARD ###
 def init_sd_card():
     try:
         sd_spi = SPI(0, sck=Pin(18, Pin.OUT), mosi=Pin(19, Pin.OUT), miso=Pin(16, Pin.OUT))
@@ -60,7 +61,9 @@ def mount_sd_card(sd_card, sd_card_mount_point):
     else:
         print("SD card mounted")
 
-
+###############
+        
+#### LEDS #####
 # Turns off the button LEDs
 def clear_button_leds():
     button_a.led_off()
@@ -69,7 +72,6 @@ def clear_button_leds():
     button_d.led_off()
     button_e.led_off()
 
-# turn off the network led and disable any pulsing animation that's running
 def clear_all_leds():
     led_wifi.off()
     led_busy.off()
@@ -109,12 +111,16 @@ def illuminate_button_leds(times=3):
     n = 0
     while n < times:
         for led in leds:
-            led.led_toggle()
+            led.led_on()
             time.sleep(0.1)
-            # led.led_off()
+            led.led_off()
+            time.sleep(0.1)
         n += 1
     clear_button_leds()        
 
+###############
+
+#### SLEEPs ###
 def usb_sleep(milliseconds):
     illuminate_button_leds()
     time.sleep(1)
@@ -131,6 +137,9 @@ def battery_sleep(minutes):
     print("Going to deep sleep for {} minutes".format(minutes))
     inky_frame.sleep_for(minutes)
 
+###############
+
+### NETWORK ###
 def network_connect(SSID, PSK):
     print("Attempting to connect the WiFi network", SSID)
     # Turn on the WiFi LED
@@ -147,19 +156,7 @@ def network_connect(SSID, PSK):
         if wlan.isconnected():
             print("Connected to the WiFi network", SSID)
             time.sleep(5) # sometimes, well... sometimes it just helps to wait a little longer
-            return
-            # max_wait_internet = 3
-            # while max_wait_internet > 0:
-            #     if validate_wifi_connection():
-            #         print("Internet connection validated")
-            #         led_wifi.off()
-            #         return
-            #     max_wait_internet -= 1
-            #     print("Waiting for the internet connection...")
-            #     time.sleep(4)
-            # if max_wait_internet == 0:
-            #     max_wait_wifi -= 1
-            #     print('Wait a little...')    
+            return  
         max_wait_wifi -= 1
         time.sleep(5)                 
     led_wifi.off()
@@ -171,17 +168,6 @@ def network_connect(SSID, PSK):
     # -1  STAT_CONNECT_FAIL -- failed due to other problems,
     # 3   STAT_GOT_IP -- connection successful.
 
-# function that validates the wifi connection by making a request to ifconfig.me/ip and printing the received IP address
-# def validate_wifi_connection():
-#     try:
-#         print("Validating the WiFi connection")
-#         ip = requests.get("https://ifconfig.me/ip").text
-#         print("IP address:", ip)
-#         return True
-#     except Exception as e:
-#         print("Failed to validate the WiFi connection", e)
-#         return False
-
 
 def network_disconnect():
     print("Attempting to disconnect from the WiFi network")
@@ -191,32 +177,9 @@ def network_disconnect():
     led_wifi.off()
     print("Disconnected from the WiFi network")
 
+###############
 
-def stop_execution():
-    print("Stopping execution")
-    network_disconnect()
-    clear_all_leds()
-    time.sleep(0.1)
-    inky_frame.turn_off()
-    sys.exit() # for usb power
-
-def sync_time():
-    try:
-        print("Synchronizing the time")
-        inky_frame.set_time()
-        inky_frame.pcf_to_pico_rtc()
-        year, month, day, hour, mins, secs, weekday, yearday = time.localtime()   
-        print("Time set to: " + "{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(year, month, day, hour, mins, secs) + "UTC")  
-        return True
-    except Exception as e:
-        raise InkyHelperError(e)
-    
-def file_exists(filename):
-    try:
-        return (os.stat(filename)[0] & 0x4000) == 0
-    except OSError:
-        return False
-
+### APP and STATE ###
 
 def clear_state():
     if file_exists("state.ujson"):
@@ -248,7 +211,44 @@ def launch_app(app_name):
     print(app)
     update_state(app_name)
 
+######################## 
+
 def write_debug_msg(filename, message):
     year, month, day, hour, mins, secs, weekday, yearday = time.localtime() 
     with open (filename, "a") as f:
         print("{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}: ".format(year, month, day, hour, mins, secs) + message, file=f)
+
+def show_error(display, text):
+    WIDTH, HEIGHT = display.get_bounds()
+    print(text)
+    display.set_font("bitmap8")
+    display.set_pen(1)
+    display.clear()
+    display.set_pen(0)
+    display.text(text, 5, 16, WIDTH, 4)
+    display.update()
+
+def stop_execution():
+    print("Stopping execution")
+    network_disconnect()
+    clear_all_leds()
+    time.sleep(0.1)
+    inky_frame.turn_off()
+    sys.exit() # for usb power
+
+def sync_time():
+    try:
+        print("Synchronizing the time")
+        inky_frame.set_time()
+        inky_frame.pcf_to_pico_rtc()
+        year, month, day, hour, mins, secs, weekday, yearday = time.localtime()   
+        print("Time set to: " + "{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(year, month, day, hour, mins, secs) + "UTC")  
+        return True
+    except Exception as e:
+        raise InkyHelperError(e)
+    
+def file_exists(filename):
+    try:
+        return (os.stat(filename)[0] & 0x4000) == 0
+    except OSError:
+        return False    
