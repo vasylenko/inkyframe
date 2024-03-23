@@ -17,7 +17,7 @@ variable "function_name" {
 variable "function_timeout" {
   description = "The timeout of the Lambda function execution in seconds"
   type        = number
-  default     = 3
+  default     = 15
 }
 variable "function_ssm_parameter_names" {
   description = "A set of SSM parameter names to be precreated for the function (env variables will be precreated as well)"
