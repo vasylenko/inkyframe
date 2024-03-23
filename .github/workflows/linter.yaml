@@ -10,7 +10,7 @@ jobs:
   tfsyntax:
     name: Validate and Format
     runs-on: ubuntu-latest
-    container: hashicorp/terraform:1.6
+    container: hashicorp/terraform:1.7
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
