@@ -3,7 +3,7 @@ on:
   pull_request:
 
 env:
-  TF_DIR: "infra"
+  TF_DIR: "terraform"
 
 
 jobs:
