@@ -34,9 +34,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Cleanup tflint plugins with different architecture
-        run: rm -rf infra/.tflint.d
-
       - name: Init linter
         working-directory: ${{ env.TF_DIR }}
         run: tflint --init
