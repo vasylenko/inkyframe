@@ -45,23 +45,11 @@ jobs:
   trivy:
     name: Run Security Scanning with Trivy
     runs-on: ubuntu-latest
+    container: ghcr.io/aquasecurity/trivy:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Run Trivy IaC Scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'config'
-          hide-progress: true
-          format: 'table'
-          limit-severities-for-sarif: true
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-#          output: 'trivy-results.sarif'
-
-#      - name: Upload Trivy scan results to GitHub Security tab
-#        uses: github/codeql-action/upload-sarif@v3
-#        if: always()
-#        with:
-#          sarif_file: 'trivy-results.sarif'
+        working-directory: ${{ env.TF_DIR }}
+        run: trivy config . -q --severity HIGH,CRITICAL
