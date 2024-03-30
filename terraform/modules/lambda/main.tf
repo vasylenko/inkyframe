@@ -10,6 +10,7 @@ resource "aws_lambda_function" "this" {
   runtime       = "provided.al2023"
   handler       = "bootstrap.handler"
   timeout       = var.function_timeout
+  kms_key_arn   = data.aws_kms_alias.lambda.arn
   environment {
     variables = { for item in var.function_ssm_parameter_names : upper(replace(item, "-", "_")) => aws_ssm_parameter.function_ssm_parameters[item].name }
   }
@@ -68,6 +69,7 @@ resource "aws_iam_role_policy" "this" {
   policy = data.aws_iam_policy_document.this.json
 }
 
+#trivy:ignore:AVD-AWS-0057
 data "aws_iam_policy_document" "this" {
   statement {
     sid = "writeLogs"
@@ -81,9 +83,9 @@ data "aws_iam_policy_document" "this" {
     ]
   }
   statement {
-    sid       = "createLogGroup"
-    actions   = ["logs:CreateLogGroup"]
-    effect    = "Allow"
+    sid     = "createLogGroup"
+    actions = ["logs:CreateLogGroup"]
+    effect  = "Allow"
     resources = ["arn:aws:logs:${data.aws_region.this.id}:${data.aws_caller_identity.this.id}:*"]
   }
   statement {
