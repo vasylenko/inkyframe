@@ -51,5 +51,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy IaC Scanner
-        working-directory: ${{ env.TF_DIR }}
-        run: trivy config . -q --severity HIGH,CRITICAL
+        run: |
+          trivy config \
+          -q \
+          --severity HIGH,CRITICAL \
+          --format table --exit-code 1 \
+          ${{ env.TF_DIR }}
