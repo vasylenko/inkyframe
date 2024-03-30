@@ -55,7 +55,7 @@ jobs:
           scan-type: 'config'
           hide-progress: true
           format: 'github'
-          github-pat: $(( env.GITHUB_TOKEN ))
+          github-pat: $(( github.token ))
           limit-severities-for-sarif: true
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
