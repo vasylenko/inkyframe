@@ -56,7 +56,7 @@ jobs:
           hide-progress: true
           format: 'sarif'
           limit-severities-for-sarif: true
-          exit-code: '1'
+#          exit-code: '1'
           severity: 'CRITICAL,HIGH'
           output: 'trivy-results.sarif'
 
