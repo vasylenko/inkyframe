@@ -83,9 +83,9 @@ data "aws_iam_policy_document" "this" {
     ]
   }
   statement {
-    sid     = "createLogGroup"
-    actions = ["logs:CreateLogGroup"]
-    effect  = "Allow"
+    sid       = "createLogGroup"
+    actions   = ["logs:CreateLogGroup"]
+    effect    = "Allow"
     resources = ["arn:aws:logs:${data.aws_region.this.id}:${data.aws_caller_identity.this.id}:*"]
   }
   statement {
