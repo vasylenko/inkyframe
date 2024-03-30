@@ -3,7 +3,7 @@ variable "deployment_file" {
   type        = string
   validation {
     condition     = fileexists(var.deployment_file)
-    error_message = "Specified Lambda authorizer zip file does not exist"
+    error_message = "Specified Lambda authorizer zip file does not exist."
   }
 }
 variable "project_name" {
