@@ -1,4 +1,4 @@
-name: Run Linters
+name: Run Terraform Checks
 on:
   pull_request:
 
@@ -8,7 +8,7 @@ env:
 
 jobs:
   tfsyntax:
-    name: Validate and Format
+    name: Validate Terraform Syntax and Format
     runs-on: ubuntu-latest
     container: hashicorp/terraform:1.7
     steps:
@@ -27,7 +27,7 @@ jobs:
           terraform fmt -check -diff -recursive -no-color  
 
   tflint:
-    name: TFlint
+    name: Do Linting
     runs-on: ubuntu-latest
     container: ghcr.io/terraform-linters/tflint:latest
     steps:
@@ -41,3 +41,24 @@ jobs:
       - name: Run linter
         working-directory: ${{ env.TF_DIR }}
         run: tflint --recursive --no-color
+
+  trivy:
+    name: Run Security Scanning with Trivy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          hide-progress: true
+          format: 'sarif'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-results.sarif'
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
